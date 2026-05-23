@@ -40,12 +40,31 @@ class GestorAgua:
         "Extremo": 0.6
     }
 
-    def __init__(self, contenedores, fecha_fin_str):
-        # contenedores es una lista de objetos ContenedorHidrico
-        self.contenedores = contenedores
-        self.fecha_fin_str = fecha_fin_str
-        self.modo_actual = "Normal"
-        self.historial_consumo = [] # Lista de litros gastados por día en el pasado
+    def __init__(self, contenedores=None, fecha_fin_str=None):
+        import src.database as db
+        # 1. Cargar Contenedores
+        if contenedores is not None:
+            self.contenedores = contenedores
+        else:
+            self.contenedores = []
+            db_conts = db.cargar_contenedores()
+            for c in db_conts:
+                cont = ContenedorHidrico(c["nombre"], c["tipo"], c["capacidad_maxima"])
+                cont.litros_actuales = c["litros_actuales"]
+                self.contenedores.append(cont)
+                
+        # 2. Cargar Configuración (fecha_fin y modo_actual)
+        db_fecha_fin, db_modo = db.cargar_configuracion()
+        
+        if fecha_fin_str is not None:
+            self.fecha_fin_str = fecha_fin_str
+        else:
+            self.fecha_fin_str = db_fecha_fin
+            
+        self.modo_actual = db_modo
+        
+        # 3. Cargar Historial para Bayes
+        self.historial_consumo = db.cargar_historial_completo()
 
     @property
     def litros_totales(self):
@@ -57,15 +76,21 @@ class GestorAgua:
         
     def extraer_agua(self, cantidad):
         """Descuenta agua en cascada: vacía contenedores uno por uno."""
+        import src.database as db
         faltante = cantidad
         for contenedor in self.contenedores:
             if faltante <= 0:
                 break
             if contenedor.litros_actuales > 0:
-                faltante = contenedor.extraer(faltante)
+                # Extraemos y actualizamos el contenedor en memoria
+                extraido = min(contenedor.litros_actuales, faltante)
+                contenedor.extraer(extraido)
+                faltante -= extraido
+                # Guardamos en base de datos
+                db.actualizar_nivel_contenedor(contenedor.nombre, contenedor.litros_actuales)
                 
         if faltante > 0:
-            print(f"⚠️ Alerta: No hay suficiente agua en ningún tanque. Faltaron {faltante}L por extraer.")
+            print(f"Alerta: No hay suficiente agua en ningún tanque. Faltaron {faltante}L por extraer.")
 
     def calcular_consumo_ideal(self):
         hoy = datetime.now().date()
@@ -85,8 +110,10 @@ class GestorAgua:
         
     def cambiar_modo(self, modo):
         """Cambia el modo de operación."""
+        import src.database as db
         if modo in self.MODOS_OPERACION:
             self.modo_actual = modo
+            db.guardar_modo(modo)
             print(f"Modo cambiado a: {modo}")
         else:
             print("Modo inválido.")
@@ -107,7 +134,12 @@ class GestorAgua:
             
     def registrar_fuga(self, litros_perdidos):
         """Resta litros directamente por una fuga detectada."""
+        import src.database as db
         self.extraer_agua(litros_perdidos)
+        # Guardamos el consumo en la base de datos como una fuga
+        db.registrar_consumo_db(litros_perdidos, "Fuga Detectada")
+        # Actualizamos el historial en memoria
+        self.historial_consumo = db.cargar_historial_completo()
         print(f"Fuga registrada: Se han perdido {litros_perdidos}L. Agua total restante: {self.litros_totales}L")
 
     def agregar_dia_historial(self, gasto_del_dia):
@@ -116,13 +148,28 @@ class GestorAgua:
 
     def registrar_actividad(self, actividad, cantidad=1):
         """Resta del sistema de tanques los litros correspondientes a la actividad."""
+        import src.database as db
         if actividad in self.ACTIVIDADES:
             gasto = self.ACTIVIDADES[actividad] * cantidad
             self.extraer_agua(gasto)
+            # Guardamos el consumo en la base de datos
+            db.registrar_consumo_db(gasto, f"Actividad: {actividad.replace('_', ' ').title()}")
+            # Actualizamos el historial en memoria
+            self.historial_consumo = db.cargar_historial_completo()
             return gasto
         else:
             print(f"La actividad '{actividad}' no existe en el catálogo.")
             return 0
+
+    def recargar_contenedores(self):
+        """Recarga todos los contenedores al 100% de su capacidad en memoria y base de datos."""
+        import src.database as db
+        for contenedor in self.contenedores:
+            contenedor.litros_actuales = contenedor.capacidad_maxima
+        db.recargar_todos_los_contenedores()
+        # Registramos una recarga con 0 litros gastados
+        db.registrar_consumo_db(0, "Recarga de Contenedores al 100%")
+        print("Contenedores recargados al 100%.")
             
     def simular_semana(self, rutina_diaria):
         """
@@ -182,12 +229,20 @@ class GestorAgua:
 
 # --- Prueba de la lógica (Arquitectura de Contenedores) ---
 if __name__ == "__main__":
+    import sys
+    import os
+    sys.path.insert(0, os.path.abspath(os.path.dirname(os.path.dirname(__file__))))
+    
+    import src.database as db
+    db.inicializar_bd()
+    db.cargar_datos_iniciales()
+    
     # Creamos un par de contenedores
     tanque_principal = ContenedorHidrico("Tanque Subterráneo", "Tanque", 1000)
     pipa_respaldo = ContenedorHidrico("Pipa de Baño", "Pipa", 200)
     
     # Iniciamos el gestor con la lista de contenedores (Total = 1200L)
-    gestor = GestorAgua([tanque_principal, pipa_respaldo], "2026-05-15")
+    gestor = GestorAgua([tanque_principal, pipa_respaldo], "2026-06-21")
     
     print(f"Inventario Hídrico Inicial: {gestor.litros_totales}L en total")
     for c in gestor.contenedores:
@@ -213,3 +268,5 @@ if __name__ == "__main__":
     gestor.agregar_dia_historial(140)
     prob = gestor.probabilidad_supervivencia()
     print(f"Con {gestor.litros_totales}L restantes y este alto consumo, la probabilidad de sobrevivir es: {prob}%")
+
+
