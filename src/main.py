@@ -19,8 +19,15 @@ desde Python. Sirve para crear ventanas, botones y cajas de texto de forma profe
 4. Creamos y mostramos la ventana `AqualiDashboard` (que diseñamos en main_window.py).
 """
 
-# Asegurar que python puede importar desde 'src' estando en la raíz del proyecto
-sys.path.insert(0, os.path.abspath(os.path.dirname(os.path.dirname(__file__))))
+# Asegurar que python puede importar desde la raíz del proyecto
+if getattr(sys, 'frozen', False):
+    # Si se ejecuta compilado con PyInstaller
+    base_dir = sys._MEIPASS
+else:
+    # Si se ejecuta en desarrollo normal
+    base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+sys.path.insert(0, base_dir)
 
 from PyQt5.QtWidgets import QApplication
 from src.logic import GestorAgua

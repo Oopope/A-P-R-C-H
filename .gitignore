@@ -22,3 +22,8 @@ data/*.db-journal
 .idea/
 *.suo
 *.user
+
+# Archivos de PyInstaller (compilación)
+build/
+dist/
+*.spec

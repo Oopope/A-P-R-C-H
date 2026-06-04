@@ -1,8 +1,15 @@
 import sqlite3
 import os
+import sys
 
-# Definimos la ruta de la base de datos de forma absoluta, relativa a la ubicación del archivo
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+# Definimos la ruta de la base de datos de forma absoluta
+if getattr(sys, 'frozen', False):
+    # Si está compilado, la base de datos se guarda al lado del ejecutable .exe
+    BASE_DIR = os.path.dirname(sys.executable)
+else:
+    # Si está en modo desarrollo
+    BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
 DB_PATH = os.path.join(BASE_DIR, "data", "sistema.db")
 
 def conectar():
