@@ -1,0 +1,29 @@
+# Entornos virtuales (Virtual Environments)
+.venv/
+venv/
+env/
+ENV/
+*.venv
+
+# Archivos de caché de Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+
+# Base de datos local (evita subir tu base de datos de pruebas a GitHub)
+data/*.db
+data/*.db-journal
+
+# Carpetas de configuración del editor
+.vscode/
+.idea/
+*.suo
+*.user
+
+# Archivos de PyInstaller (compilación)
+build/
+dist/
+*.spec
