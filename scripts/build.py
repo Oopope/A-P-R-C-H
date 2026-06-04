@@ -22,15 +22,12 @@ def build():
         sys.exit(1)
 
     # Configuración de PyInstaller
-    # --noconfirm: Reemplaza carpetas de salida anteriores sin preguntar
-    # --windowed: Oculta la terminal al ejecutar el .exe (interfaz gráfica pura)
-    # --name: Nombre del ejecutable final
-    # --add-data: Copia la estructura de la base de datos o carpetas necesarias
     cmd = [
         pyinstaller_bin,
         "--noconfirm",
         "--windowed",
         "--name=A-P-R-C-H",
+        f"--paths={project_root}",
         f"--add-data={os.path.join(project_root, 'data')}{os.path.pathsep}data",
         entry_point
     ]
