@@ -22,15 +22,26 @@ class ContenedorHidrico:
         return f"{self.nombre} ({self.tipo}): {self.litros_actuales}/{self.capacidad_maxima}L"
 
 class GestorAgua:
-    # Catálogo de actividades estándar (litros estimados por acción)
+    # Catálogo de actividades estándar (litros estimados por minuto de uso)
     ACTIVIDADES = {
-        "baño": 10,
-        "lavar_platos": 15,
-        "lavar_ropa": 60,
-        "lavar_auto": 100,
-        "cocinar": 5,
-        "bajar_poceta": 6
+        "ducha": 10,
+        "lavar_platos": 5,
+        "lavar_ropa": 12,
+        "cocinar": 2,
+        "lavar_auto": 15,
+        "riego": 6
     }
+
+    def obtener_minutos_restantes(self):
+        """Calcula cuántos minutos quedan para cada actividad basado en los litros totales."""
+        minutos = {}
+        litros_disponibles = self.litros_totales
+        for actividad, litros_por_minuto in self.ACTIVIDADES.items():
+            if litros_por_minuto > 0:
+                minutos[actividad] = int(litros_disponibles / litros_por_minuto)
+            else:
+                minutos[actividad] = 0
+        return minutos
 
     
     # Multiplicador de consumo según el modo de operación
