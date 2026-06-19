@@ -23,8 +23,8 @@ QDialog QPushButton {
     background-color: #334155;
     color: #F8FAFC;
     border: 1px solid #475569;
-    border-radius: 6px;
-    padding: 6px 15px;
+    border-radius: 8px;
+    padding: 8px 16px;
     font-weight: bold;
 }
 
@@ -36,7 +36,7 @@ QDialog QLineEdit, QDialog QSpinBox, QDialog QDoubleSpinBox, QDialog QComboBox {
     background-color: #0F172A;
     border: 1px solid #475569;
     border-radius: 6px;
-    padding: 5px;
+    padding: 6px;
     color: white;
 }
 
@@ -44,8 +44,6 @@ QDialog QLineEdit, QDialog QSpinBox, QDialog QDoubleSpinBox, QDialog QComboBox {
 QFrame#Sidebar {
     background-color: #1E293B; /* Slate 800 */
     border-right: 1px solid #334155;
-    min-width: 200px;
-    max-width: 200px;
 }
 
 /* Logo Aqualy en Times New Roman */
@@ -54,9 +52,9 @@ QLabel#LogoLabel {
     font-size: 36px;
     font-weight: bold;
     font-style: italic;
-    color: #FACC15; /* Yellow/Gold Aura style */
-    padding: 20px 10px;
-    margin-bottom: 20px;
+    color: #FACC15; /* Yellow/Gold */
+    padding: 20px 5px;
+    margin-bottom: 10px;
 }
 
 /* Botones de Navegación del Menú */
@@ -69,7 +67,7 @@ QPushButton.MenuButton {
     text-align: left;
     font-weight: bold;
     font-size: 14px;
-    margin: 4px 10px;
+    margin: 4px 5px;
 }
 
 QPushButton.MenuButton:hover {
@@ -80,6 +78,22 @@ QPushButton.MenuButton:hover {
 QPushButton.MenuButton:checked {
     background-color: #3B82F6; /* Blue 500 */
     color: white;
+}
+
+/* Botón de Colapsar Menú */
+QPushButton#BtnToggleSidebar {
+    background-color: transparent;
+    color: #F8FAFC;
+    border: none;
+    font-size: 18px;
+    font-weight: bold;
+    padding: 10px;
+    text-align: center;
+}
+
+QPushButton#BtnToggleSidebar:hover {
+    background-color: rgba(255, 255, 255, 0.08);
+    border-radius: 6px;
 }
 
 /* --- Área de Contenido Principal --- */
@@ -121,6 +135,19 @@ QLineEdit {
 }
 
 QLineEdit:focus {
+    border: 1px solid #3B82F6;
+}
+
+/* IMPORTANTE: Solución de números invisibles */
+QSpinBox, QDoubleSpinBox {
+    background-color: #1E293B;
+    border: 1px solid #475569;
+    border-radius: 8px;
+    padding: 8px 12px;
+    color: white;
+}
+
+QSpinBox:focus, QDoubleSpinBox:focus {
     border: 1px solid #3B82F6;
 }
 
@@ -211,31 +238,6 @@ QPushButton.DangerButton:hover {
     background-color: #EF4444;
 }
 
-/* --- Estilo Específico de Tarjetas de Actividad de Usuario --- */
-QFrame.ActivityCard {
-    background-color: rgba(30, 41, 59, 0.5);
-    border: 1px solid rgba(255, 255, 255, 0.05);
-    border-radius: 12px;
-    padding: 15px;
-}
-
-QFrame.ActivityCard:hover {
-    background-color: rgba(59, 130, 246, 0.1);
-    border: 1px solid rgba(59, 130, 246, 0.4);
-}
-
-QLabel.ActivityTitle {
-    font-size: 16px;
-    font-weight: bold;
-    color: #F8FAFC;
-}
-
-QLabel.ActivityTime {
-    font-size: 20px;
-    font-weight: bold;
-    color: #FACC15; /* Amarillo de advertencia/minutos */
-}
-
 /* --- Badges del Semáforo --- */
 QLabel#SemaforoVerde {
     background-color: rgba(22, 163, 74, 0.2);
@@ -288,5 +290,80 @@ QScrollBar::handle:vertical {
 
 QScrollBar::handle:vertical:hover {
     background: #475569;
+}
+
+/* --- Estilos Adicionales para el Asistente y Medidor --- */
+QWidget#PantallaBienvenida {
+    background-color: #0F172A;
+}
+
+QLabel#BienvenidaTitulo {
+    font-size: 28px;
+    font-weight: bold;
+    color: #FACC15;
+    margin-bottom: 10px;
+}
+
+QLabel#BienvenidaTexto {
+    font-size: 15px;
+    color: #94A3B8;
+}
+
+/* Panel del Medidor Físico */
+QFrame#PanelMedidor {
+    background-color: #1E293B;
+    border: 2px solid #334155;
+    border-radius: 14px;
+    padding: 15px;
+}
+
+QFrame#MedidorPantallaLCD {
+    background-color: #020617;
+    border: 1px solid #3B82F6;
+    border-radius: 8px;
+    padding: 12px;
+}
+
+QLabel.LecturaLCD {
+    font-family: 'Consolas', 'Courier New', monospace;
+    font-size: 22px;
+    font-weight: bold;
+    color: #06B6D4;
+}
+
+QLabel.LecturaLCDLabel {
+    font-size: 11px;
+    font-weight: bold;
+    color: #94A3B8;
+}
+
+/* Botones de sugerencia rápidos en Chat */
+QPushButton.SugestButton {
+    background-color: #1E293B;
+    color: #3B82F6;
+    border: 1px solid #3B82F6;
+    border-radius: 15px;
+    padding: 6px 12px;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+QPushButton.SugestButton:hover {
+    background-color: #3B82F6;
+    color: white;
+}
+
+/* Caja de entrada de chat */
+QLineEdit#ChatInput {
+    background-color: #1E293B;
+    border: 1px solid #334155;
+    border-radius: 20px;
+    padding: 8px 15px;
+    color: white;
+    font-size: 13px;
+}
+
+QLineEdit#ChatInput:focus {
+    border: 1px solid #3B82F6;
 }
 """
