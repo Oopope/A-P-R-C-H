@@ -374,8 +374,8 @@ class AqualiDashboard(QMainWindow):
         self.btn_group.addButton(self.btn_sistema)
         sidebar_layout.addWidget(self.btn_sistema)
 
-        # Pestaña 2: Configuracion
-        self.btn_config = QPushButton("[C]  Configuracion")
+        # Pestaña 2: Configuración
+        self.btn_config = QPushButton("[C]  Configuración")
         self.btn_config.setProperty("class", "MenuButton")
         self.btn_config.setCheckable(True)
         self.btn_group.addButton(self.btn_config)
@@ -425,7 +425,7 @@ class AqualiDashboard(QMainWindow):
             self.sidebar.setMaximumWidth(200)
             self.sidebar.setMinimumWidth(65)
             self.btn_sistema.setText("[S]  Mi Sistema")
-            self.btn_config.setText("[C]  Configuracion")
+            self.btn_config.setText("[C]  Configuración")
             self.logo_label.show()
             self.lbl_version.show()
 
@@ -655,7 +655,142 @@ class AqualiDashboard(QMainWindow):
         self.stack.addWidget(page)
 
     # ─────────────────────────────────────────────────────────────────────────
-    # PESTAÑA 1: CONFIGURACIÓN
+    # CHAT DEL ASISTENTE
+    # ─────────────────────────────────────────────────────────────────────────
+        while self.usuario_grid.count():
+            item = self.usuario_grid.takeAt(0)
+            widget = item.widget()
+            if widget:
+                widget.deleteLater()
+
+        minutos = self.gestor.obtener_minutos_restantes()
+        actividades = [
+            ("ducha", "Ducha"),
+            ("lavar_platos", "Lavar Platos"),
+            ("lavar_ropa", "Lavadora"),
+            ("cocinar", "Cocinar"),
+            ("riego", "Riego"),
+            ("lavar_auto", "Lavar Auto"),
+        ]
+
+        row = 0
+        col = 0
+        for clave, nombre in actividades:
+            card = CardWidget(nombre)
+            lbl_min = QLabel(f"Minutos disponibles: {minutos.get(clave, 0)}")
+            lbl_min.setStyleSheet("color: #E2E8F0; font-size: 13px;")
+            card.add_widget(lbl_min)
+
+            btn_reg_1 = QPushButton("Registrar 1 min")
+            btn_reg_1.setProperty("class", "SecondaryButton")
+            btn_reg_1.setFixedHeight(34)
+            btn_reg_1.clicked.connect(lambda _, a=clave: self._registrar_actividad(a, 1))
+            card.add_widget(btn_reg_1)
+
+            btn_reg_custom = QPushButton("Registrar 5 min")
+            btn_reg_custom.setProperty("class", "PrimaryButton")
+            btn_reg_custom.setFixedHeight(34)
+            btn_reg_custom.clicked.connect(lambda _, a=clave: self._registrar_actividad_personalizado(a))
+            card.add_widget(btn_reg_custom)
+
+            self.usuario_grid.addWidget(card, row, col)
+            col += 1
+            if col >= 2:
+                col = 0
+                row += 1
+
+    def _registrar_actividad(self, actividad, minutos):
+        gasto = self.gestor.registrar_actividad(actividad, minutos)
+        if gasto > 0:
+            QMessageBox.information(
+                self, "Actividad registrada",
+                f"Se ha registrado el consumo de {minutos} min para '{actividad.replace('_', ' ').title()}'.\n" 
+                f"Esto equivale a {gasto:.1f} L descontados de sus reservas."
+            )
+            self._actualizar_interfaz()
+            self._rebuild_usuario_panel()
+
+    def _registrar_actividad_personalizado(self, actividad):
+        dialog = QDialog(self)
+        dialog.setWindowTitle("Registrar consumo personalizado")
+        dialog.setModal(True)
+        dialog.setFixedSize(420, 210)
+
+        layout = QVBoxLayout(dialog)
+        layout.setContentsMargins(18, 18, 18, 18)
+        layout.setSpacing(12)
+
+        lbl = QLabel("Ingrese los minutos de consumo para la actividad seleccionada:")
+        lbl.setWordWrap(True)
+        layout.addWidget(lbl)
+
+        spin = QSpinBox(dialog)
+        spin.setRange(1, 240)
+        spin.setValue(5)
+        spin.setSuffix(" min")
+        layout.addWidget(spin)
+
+        buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
+        buttons.accepted.connect(dialog.accept)
+        buttons.rejected.connect(dialog.reject)
+        layout.addWidget(buttons)
+
+        if dialog.exec_() == QDialog.Accepted:
+            minutos = spin.value()
+            self._registrar_actividad(actividad, minutos)
+
+    def _actualizar_resumen_admin(self):
+        if hasattr(self, 'lbl_admin_resumen'):
+            litros = self.gestor.litros_totales
+            contadores = len(self.gestor.contenedores)
+            fecha = self.gestor.fecha_fin_str
+            self.lbl_admin_resumen.setText(
+                f"Litros totales: {litros:.1f} L\nContenedores: {contadores}\nFecha de corte: {fecha}"
+            )
+
+    def _mostrar_registro_fuga(self):
+        dialog = QDialog(self)
+        dialog.setWindowTitle("Registrar Fuga")
+        dialog.setModal(True)
+        dialog.setFixedSize(420, 220)
+        dlg_layout = QVBoxLayout(dialog)
+        dlg_layout.setContentsMargins(18, 18, 18, 18)
+        dlg_layout.setSpacing(12)
+
+        lbl = QLabel("Ingrese el volumen estimado de la fuga (Litros):")
+        lbl.setWordWrap(True)
+        dlg_layout.addWidget(lbl)
+
+        self.spin_fuga = QDoubleSpinBox(dialog)
+        self.spin_fuga.setRange(0.1, 5000.0)
+        self.spin_fuga.setDecimals(1)
+        self.spin_fuga.setValue(5.0)
+        self.spin_fuga.setSuffix(" L")
+        dlg_layout.addWidget(self.spin_fuga)
+
+        btn_box = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
+        btn_box.accepted.connect(dialog.accept)
+        btn_box.rejected.connect(dialog.reject)
+        dlg_layout.addWidget(btn_box)
+
+        if dialog.exec_() == QDialog.Accepted:
+            litros = self.spin_fuga.value()
+            self.gestor.registrar_fuga(litros)
+            QMessageBox.information(
+                self, "Fuga registrada",
+                f"Se registró una fuga de {litros:.1f} litros y se descontó de los contenedores."
+            )
+            self._actualizar_interfaz()
+            self._rebuild_usuario_panel()
+
+    def _recargar_contenedores(self):
+        self.gestor.recargar_contenedores()
+        QMessageBox.information(self, "Recarga completa", "Todos los contenedores se recargaron al 100%.")
+        self._actualizar_interfaz()
+        self._rebuild_usuario_panel()
+
+    # ─────────────────────────────────────────────────────────────────────────
+    # PESTAÑA 2: CONFIGURACIÓN
     # ─────────────────────────────────────────────────────────────────────────
     def _build_configuracion(self):
         """
@@ -841,6 +976,7 @@ class AqualiDashboard(QMainWindow):
             self.lbl_prob.setStyleSheet("font-size: 13px; font-weight: bold; color: #EAB308;")
         else:
             self.lbl_prob.setStyleSheet("font-size: 13px; font-weight: bold; color: #EF4444;")
+        self._actualizar_resumen_admin()
 
     def _rebuild_barras(self):
         """Reconstruye desde cero las barras de progreso de los recipientes."""
