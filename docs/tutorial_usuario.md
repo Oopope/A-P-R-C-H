@@ -6,8 +6,9 @@ Este documento explica paso a paso cómo usar Aqualy, cada pantalla, acciones di
 
 ## Resumen rápido (rápido para arrancar)
 
-- Abrir app en desarrollo: ejecutar `python src/main.py` desde la raíz del proyecto.
-- Ejecutable Windows: `dist/A-P-R-C-H/A-P-R-C-H.exe` (creado con `scripts/build.py`).
+- Abrir app en desarrollo (desde `A-P-R-C-H`): ejecutar `python src/main.py`.
+- Abrir app en desarrollo (desde `Proyecto`): ejecutar `python A-P-R-C-H/src/main.py`.
+- Ejecutable Windows: `dist/A-P-R-C-H/A-P-R-C-H.exe` (creado con `scripts/build.py` desde `A-P-R-C-H`).
 - Base de datos SQLite: `data/sistema.db` (copia de seguridad recomendada antes de cambios).
 
 ---
@@ -87,7 +88,7 @@ Cada sección y sus controles se describen a continuación con la acción exacta
   - Click en un contenedor abre un detalle con historial (últimos consumos) y botón `Ver historial`.
   - Si se actualiza el consumo desde otra pantalla, la barra y los litros se actualizan inmediatamente.
 
-  3.2 Pantalla `Administrador` (acciones críticas)
+    3.2 Pantalla `Administrador` (acciones críticas)
 
 - Botones principales:
   - `Recargar todo` (o `Restablecer tanques`): restaura todos los contenedores a su capacidad máxima. Usar cuando se recibe suministro.

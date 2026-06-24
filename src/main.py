@@ -10,7 +10,7 @@ Secuencia de arranque:
   1. Inicializar la base de datos SQLite y cargar los datos de fábrica.
   2. Crear el GestorAgua (controlador de lógica y recipientes).
   3. Asegurar que existan consumos históricos para el cálculo bayesiano.
-  4. Instanciar el SensorSimulado y entrenar el modelo de IA simbólica.
+  4. Instanciar el SensorSimulado.
   5. Mostrar el WelcomeDialog de bienvenida (solo la primera vez de la sesión).
   6. Si el usuario acepta, mostrar la ventana principal AqualiDashboard.
 =============================================================================
@@ -29,7 +29,6 @@ from src.logic import GestorAgua
 from src.ui.main_window import AqualiDashboard, WelcomeDialog
 from src.ui.styles import DARK_THEME_QSS
 import src.database as db
-from src.ia_modulo import IAModeloHidrico
 from src.sensor_simulado import SensorSimulado
 
 
@@ -41,19 +40,17 @@ def main():
     # ── 2. Crear el Gestor de Agua ────────────────────────────────────────────
     gestor = GestorAgua()
 
-    # ── 3. Garantizar historial mínimo para el cálculo bayesiano ─────────────
+    # ── 3. Garantizar historial mínimo para el cálculo de proyecciones ──────
     if len(gestor.historial_consumo) < 2:
         db.registrar_consumo_db(140.0, "Histórico inicial")
         db.registrar_consumo_db(155.0, "Histórico inicial")
         db.registrar_consumo_db(148.0, "Histórico inicial")
         gestor.historial_consumo = db.cargar_historial_completo()
 
-    # ── 4. Instanciar Sensor y Modelo de IA ──────────────────────────────────
+    # ── 4. Instanciar Sensor ────────────────────────────────────────────────
     sensor = SensorSimulado()
-    ia = IAModeloHidrico()
-    ia.entrenar()   # Entrena el árbol de decisión de scikit-learn
 
-    # ── 5. Iniciar la Aplicación PyQt5 ────────────────────────────────────────
+    # ── 5. Iniciar la Aplicación PyQt5 ───────────────────────────────────────
     app = QApplication(sys.argv)
     app.setStyleSheet(DARK_THEME_QSS)
 
@@ -66,7 +63,7 @@ def main():
         sys.exit(0)
 
     # ── 7. Mostrar la Ventana Principal ───────────────────────────────────────
-    ventana = AqualiDashboard(gestor, sensor, ia)
+    ventana = AqualiDashboard(gestor, sensor)
     ventana.show()
 
     sys.exit(app.exec_())

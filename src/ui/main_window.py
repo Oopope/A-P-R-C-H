@@ -25,7 +25,7 @@ from datetime import datetime
 from src.logic import GestorAgua, ContenedorHidrico
 import src.database as db
 from src.sensor_simulado import SensorSimulado
-from src.ia_modulo import IAModeloHidrico, obtener_respuesta_asistente
+from src.ia_modulo import obtener_respuesta_asistente
 
 
 # =============================================================================
@@ -295,16 +295,15 @@ class AqualiDashboard(QMainWindow):
       - Barra lateral colapsable (☰) con 2 pestañas: Mi Sistema / Configuración
       - Pestaña 'Mi Sistema':
           * Panel superior: Nivel en tiempo real de todos los recipientes registrados
-          * Panel inferior izquierdo: Asistente Virtual (chat con IA)
+          * Panel inferior izquierdo: Asistente Virtual (chat)
           * Panel inferior derecho: Medidor en Línea (lectura de caudal, presión, temperatura)
       - Pestaña 'Configuración': Ajuste de fecha de corte, modo de operación y tasas de consumo
     """
 
-    def __init__(self, gestor: GestorAgua, sensor: SensorSimulado, ia: IAModeloHidrico):
+    def __init__(self, gestor: GestorAgua, sensor: SensorSimulado):
         super().__init__()
         self.gestor = gestor        # Controlador de la lógica de agua y recipientes
         self.sensor = sensor        # Medidor físico simulado (caudal, presión, temperatura)
-        self.ia = ia                # Modelo de IA simbólica para clasificar estados y responder preguntas
         self.consumo_acumulado = 0.0  # Litros acumulados pendientes de guardar en la BD
         self.sidebar_expandido = True  # Estado inicial: barra lateral visible
 
@@ -655,49 +654,7 @@ class AqualiDashboard(QMainWindow):
         self.stack.addWidget(page)
 
     # ─────────────────────────────────────────────────────────────────────────
-    # CHAT DEL ASISTENTE
-    # ─────────────────────────────────────────────────────────────────────────
-        while self.usuario_grid.count():
-            item = self.usuario_grid.takeAt(0)
-            widget = item.widget()
-            if widget:
-                widget.deleteLater()
-
-        minutos = self.gestor.obtener_minutos_restantes()
-        actividades = [
-            ("ducha", "Ducha"),
-            ("lavar_platos", "Lavar Platos"),
-            ("lavar_ropa", "Lavadora"),
-            ("cocinar", "Cocinar"),
-            ("riego", "Riego"),
-            ("lavar_auto", "Lavar Auto"),
-        ]
-
-        row = 0
-        col = 0
-        for clave, nombre in actividades:
-            card = CardWidget(nombre)
-            lbl_min = QLabel(f"Minutos disponibles: {minutos.get(clave, 0)}")
-            lbl_min.setStyleSheet("color: #E2E8F0; font-size: 13px;")
-            card.add_widget(lbl_min)
-
-            btn_reg_1 = QPushButton("Registrar 1 min")
-            btn_reg_1.setProperty("class", "SecondaryButton")
-            btn_reg_1.setFixedHeight(34)
-            btn_reg_1.clicked.connect(lambda _, a=clave: self._registrar_actividad(a, 1))
-            card.add_widget(btn_reg_1)
-
-            btn_reg_custom = QPushButton("Registrar 5 min")
-            btn_reg_custom.setProperty("class", "PrimaryButton")
-            btn_reg_custom.setFixedHeight(34)
-            btn_reg_custom.clicked.connect(lambda _, a=clave: self._registrar_actividad_personalizado(a))
-            card.add_widget(btn_reg_custom)
-
-            self.usuario_grid.addWidget(card, row, col)
-            col += 1
-            if col >= 2:
-                col = 0
-                row += 1
+    # FIN DE CONSTRUCCIÓN DE LA PESTAÑA 'MI SISTEMA'
 
     def _registrar_actividad(self, actividad, minutos):
         gasto = self.gestor.registrar_actividad(actividad, minutos)
@@ -708,7 +665,6 @@ class AqualiDashboard(QMainWindow):
                 f"Esto equivale a {gasto:.1f} L descontados de sus reservas."
             )
             self._actualizar_interfaz()
-            self._rebuild_usuario_panel()
 
     def _registrar_actividad_personalizado(self, actividad):
         dialog = QDialog(self)
@@ -916,29 +872,29 @@ class AqualiDashboard(QMainWindow):
         # ── Refrescar estadísticas y barras ───────────────────────────────────
         self._actualizar_interfaz()
 
-        # ── Verificar si la IA detecta una anomalía en segundo plano ─────────
+        # ── Verificar alertas de consumo en segundo plano ───────────────────────
         cap_total = sum(c.capacidad_maxima for c in self.gestor.contenedores)
         if cap_total > 0:
             pct = (self.gestor.litros_totales / cap_total) * 100
-            pred_id, _, _ = self.ia.predecir(caudal, presion, lectura["actividad_id"], pct)
-            # Si la IA detecta fuga o estado crítico, emitir alerta automática en el chat
-            if pred_id in (2, 4):
-                self._alerta_automatica(pred_id, caudal)
+            if pct < 15.0:
+                self._alerta_automatica("critico", caudal)
+            elif caudal >= 0.5 and lectura["actividad_id"] == 0 and valvula == "ABIERTA":
+                self._alerta_automatica("fuga", caudal)
 
     # Contador de ticks para no saturar el chat con alertas repetidas
     _alerta_contador = 0
 
-    def _alerta_automatica(self, pred_id, caudal):
+    def _alerta_automatica(self, tipo, caudal):
         """
-        Emite una alerta automática en el chat cuando la IA detecta una fuga
-        o un nivel crítico de reservas. Se limita a una alerta cada 60 ticks (≈2 minutos).
+        Emite una alerta automática en el chat según el tipo de condición detectada.
+        Se limita a una alerta cada 60 ticks (≈2 minutos) para evitar saturar el chat.
         """
         self._alerta_contador += 1
         if self._alerta_contador < 60:
             return
         self._alerta_contador = 0
 
-        if pred_id == 2:
+        if tipo == "fuga":
             msg = (
                 f"⚠️ Alerta automática: El medidor registra {caudal:.2f} L/min de flujo "
                 "sin actividad declarada. Esto podría indicar una fuga en su instalación. "
@@ -1036,8 +992,8 @@ class AqualiDashboard(QMainWindow):
         # Obtener lectura del medidor para que la IA tenga contexto actual
         lectura = self.sensor.obtener_lectura()
 
-        # Generar respuesta formal de la IA
-        respuesta = obtener_respuesta_asistente(pregunta, self.gestor, lectura, self.ia)
+        # Generar respuesta formal del asistente
+        respuesta = obtener_respuesta_asistente(pregunta, self.gestor, lectura)
         self._agregar_burbuja("Asistente", respuesta)
 
     def _agregar_burbuja(self, remitente: str, texto: str):

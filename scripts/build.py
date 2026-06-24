@@ -7,6 +7,7 @@ def build():
 
     # Definir rutas principales
     project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    print(f"Carpeta de proyecto detectada: {project_root}")
     entry_point = os.path.join(project_root, "src", "main.py")
     
     # Determinar el ejecutable de PyInstaller dentro del entorno virtual

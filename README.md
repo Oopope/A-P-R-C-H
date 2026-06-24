@@ -1,5 +1,8 @@
 # A-P-R-C-H — Aqualy (Proyecto de Gestión Hídrica)
 
+> Nota: este proyecto debe ejecutarse desde la carpeta `A-P-R-C-H`.
+> Si estás en la carpeta superior `Proyecto`, ejecuta `python A-P-R-C-H/src/main.py`.
+
 Resumen rápido y pasos para ejecutar y compilar el proyecto.
 
 ## Estructura principal

@@ -1,224 +1,80 @@
-import random
 from datetime import datetime
 
-try:
-    import numpy as np
-    from sklearn.tree import DecisionTreeClassifier
-    HAS_SKLEARN = True
-except ImportError:
-    HAS_SKLEARN = False
 
-class IAModeloHidrico:
-    def __init__(self):
-        self.clases = {
-            0: "Normal (Reposo)",
-            1: "Normal (Uso Esperado)",
-            2: "Alerta (Posible Fuga en la Red)",
-            3: "Alerta (Consumo Excesivo Detectado)",
-            4: "Crítico (Reserva de Agua Baja)"
-        }
-        self.entrenado = False
-        if HAS_SKLEARN:
-            # max_depth de 4 o 5 para que el árbol sea simple, explicable y simbólico
-            self.clf = DecisionTreeClassifier(max_depth=5, random_state=42)
-        else:
-            self.clf = None
+def obtener_respuesta_asistente(pregunta, gestor, sensor_reading):
+    """Genera respuestas sencillas para el asistente sin usar un modelo de IA externo."""
+    pregunta = pregunta.lower().strip()
 
-    def entrenar(self):
-        """Genera un conjunto de datos sintético exhaustivo y entrena el Árbol de Decisión."""
-        if not HAS_SKLEARN:
-            print("Aviso: scikit-learn no está instalado. Se utilizará el motor de reglas simbólicas en Python puro.")
-            self.entrenado = True
-            return
+    litros_totales = gestor.litros_totales
+    capacidad_total = sum(c.capacidad_maxima for c in gestor.contenedores)
+    porcentaje = (litros_totales / capacidad_total * 100) if capacidad_total > 0 else 0.0
+    caudal = sensor_reading.get("caudal", 0.0)
+    presion = sensor_reading.get("presion", 0.0)
+    actividad_id = sensor_reading.get("actividad_id", 0)
+    valvula_estado = sensor_reading.get("valvula_estado", "ABIERTA")
 
-        print("Entrenando el modelo de IA simbólica (DecisionTreeClassifier de Scikit-Learn)...")
-        X = []
-        y = []
+    minutos_restantes = gestor.obtener_minutos_restantes()
+    prob = gestor.probabilidad_supervivencia()
+    fecha_limite = gestor.fecha_fin_str
 
-        # Catálogo de Actividades para entrenamiento:
-        # ID 0: Ninguna (flujo ~0)
-        # ID 1: Ducha (flujo ~10 L/min)
-        # ID 2: Lavar Platos (flujo ~5 L/min)
-        # ID 3: Lavadora (flujo ~12 L/min)
-        # ID 4: Cocinar (flujo ~2 L/min)
-        # ID 5: Riego (flujo ~7 L/min)
-        # ID 6: Lavar Auto (flujo ~15 L/min)
+    if any(k in pregunta for k in ["tanque", "litros", "reserva", "agua", "estado", "porcentaje", "como va"]):
+        return (
+            f"Aqualy dice: Actualmente dispone de {litros_totales:.1f} L "
+            f"({porcentaje:.1f}% de la capacidad total). La fecha límite de suministro es {fecha_limite}."
+        )
 
-        # 1. CLASE 4: Crítico (Reserva de Agua Baja) - Si el nivel del tanque es < 15%
-        # Esta es la alerta de mayor prioridad sin importar el flujo
-        for _ in range(300):
-            porcentaje = random.uniform(0.0, 14.99)
-            caudal = random.uniform(0.0, 25.0)
-            presion = random.uniform(20.0, 52.0)
-            act = random.randint(0, 6)
-            X.append([caudal, presion, act, porcentaje])
-            y.append(4)
+    if any(k in pregunta for k in ["fuga", "perdiendo", "tubería", "goteo", "leak"]):
+        if caudal >= 0.5 and actividad_id == 0 and valvula_estado == "ABIERTA":
+            return (
+                f"Aqualy detecta un flujo activo de {caudal:.2f} L/min "
+                "sin actividad reportada. Esto puede indicar una fuga en la red hidráulica."
+            )
+        return (
+            f"No se observa una fuga clara en este momento. El caudal actual es {caudal:.2f} L/min "
+            f"y la presión es {presion:.1f} PSI."
+        )
 
-        # Para las siguientes clases, el nivel del tanque es seguro (>= 15%)
-        # 2. CLASE 0: Normal (Reposo) - Flujo nulo o goteo mínimo, sin actividad
-        for _ in range(400):
-            porcentaje = random.uniform(15.0, 100.0)
-            caudal = random.uniform(0.0, 0.49)  # caudal muy bajo
-            presion = random.uniform(49.0, 52.0)  # presión máxima estable
-            act = 0
-            X.append([caudal, presion, act, porcentaje])
-            y.append(0)
+    if any(k in pregunta for k in ["minutos", "ducha", "baño", "lavar", "cocinar", "ropa", "tiempo", "duracion"]):
+        return (
+            "Aqualy estima el tiempo disponible por actividad según sus reservas:\n"
+            f"- Ducha: {minutos_restantes.get('ducha', 0)} min\n"
+            f"- Lavar platos: {minutos_restantes.get('lavar_platos', 0)} min\n"
+            f"- Lavadora: {minutos_restantes.get('lavar_ropa', 0)} min\n"
+            f"- Cocinar: {minutos_restantes.get('cocinar', 0)} min\n"
+            f"- Riego: {minutos_restantes.get('riego', 0)} min"
+        )
 
-        # 3. CLASE 1: Normal (Uso Esperado) - Flujo y presión corresponden a la actividad declarada
-        # Ducha (ID 1): caudal 8-12
-        for _ in range(100):
-            porcentaje = random.uniform(15.0, 100.0)
-            caudal = random.uniform(8.0, 12.0)
-            presion = random.uniform(40.0, 44.0)
-            act = 1
-            X.append([caudal, presion, act, porcentaje])
-            y.append(1)
+    if any(k in pregunta for k in ["consejo", "recomienda", "ahorrar", "sugerencia", "que hago", "ayuda"]):
+        if prob > 85:
+            return (
+                f"Aqualy indica que su probabilidad de abastecimiento es alta ({prob}%). "
+                "Mantenga sus hábitos actuales y evite consumos innecesarios."
+            )
+        if prob > 50:
+            return (
+                f"Aqualy indica que su probabilidad de abastecimiento es moderada ({prob}%). "
+                "Considere activar el modo de ahorro para prolongar sus reservas."
+            )
+        return (
+            f"Aqualy indica que su probabilidad de abastecimiento es baja ({prob}%). "
+            "Reduzca el consumo inmediato y recargue sus depósitos si es posible."
+        )
 
-        # Lavar Platos (ID 2): caudal 4-6
-        for _ in range(100):
-            porcentaje = random.uniform(15.0, 100.0)
-            caudal = random.uniform(4.0, 6.5)
-            presion = random.uniform(43.0, 47.0)
-            act = 2
-            X.append([caudal, presion, act, porcentaje])
-            y.append(1)
+    if any(k in pregunta for k in ["medidor", "sensor", "funcionamiento", "para que sirve"]):
+        return (
+            "El medidor simulado registra el caudal y la presión del agua en tiempo real. "
+            "Usa esos datos para mostrar el consumo actual y detectar posibles anomalías."
+        )
 
-        # Lavadora (ID 3): caudal 10-14
-        for _ in range(100):
-            porcentaje = random.uniform(15.0, 100.0)
-            caudal = random.uniform(10.0, 14.0)
-            presion = random.uniform(38.0, 42.0)
-            act = 3
-            X.append([caudal, presion, act, porcentaje])
-            y.append(1)
+    if any(k in pregunta for k in ["hola", "buenas", "saludo"]):
+        hora = datetime.now().hour
+        saludo = "Buenos días" if hora < 12 else "Buenas tardes" if hora < 19 else "Buenas noches"
+        return f"{saludo}. Soy Aqualy, su asistente de monitoreo hídrico. ¿En qué puedo ayudarle?"
 
-        # Cocinar (ID 4): caudal 1.5 - 3
-        for _ in range(100):
-            porcentaje = random.uniform(15.0, 100.0)
-            caudal = random.uniform(1.5, 3.5)
-            presion = random.uniform(46.0, 49.0)
-            act = 4
-            X.append([caudal, presion, act, porcentaje])
-            y.append(1)
-
-        # Riego (ID 5): caudal 5.5 - 8.5
-        for _ in range(100):
-            porcentaje = random.uniform(15.0, 100.0)
-            caudal = random.uniform(5.5, 8.5)
-            presion = random.uniform(42.0, 45.0)
-            act = 5
-            X.append([caudal, presion, act, porcentaje])
-            y.append(1)
-
-        # Lavar Auto (ID 6): caudal 13 - 17
-        for _ in range(100):
-            porcentaje = random.uniform(15.0, 100.0)
-            caudal = random.uniform(13.0, 17.0)
-            presion = random.uniform(35.0, 39.0)
-            act = 6
-            X.append([caudal, presion, act, porcentaje])
-            y.append(1)
-
-        # 4. CLASE 2: Alerta (Posible Fuga en la Red) - Caudal considerable sin actividad declarada (act = 0)
-        # Esto incluye pérdidas por roturas o grifos abiertos por descuido
-        for _ in range(300):
-            porcentaje = random.uniform(15.0, 100.0)
-            caudal = random.uniform(0.5, 5.0)  # Fuga
-            presion = random.uniform(45.0, 49.0)
-            act = 0  # Declarado: Reposo
-            X.append([caudal, presion, act, porcentaje])
-            y.append(2)
-
-        # 5. CLASE 3: Alerta (Consumo Excesivo Detectado) - Flujo anormalmente alto
-        # Caudal supera los 17.5 L/min o es demasiado alto para actividades cotidianas
-        for _ in range(250):
-            porcentaje = random.uniform(15.0, 100.0)
-            caudal = random.uniform(17.5, 30.0)  # Flujo muy alto
-            presion = random.uniform(28.0, 36.0)  # Caída notable de presión
-            act = random.choice([1, 2, 4, 5])  # Actividades que no justifican tal flujo
-            X.append([caudal, presion, act, porcentaje])
-            y.append(3)
-
-        X = np.array(X)
-        y = np.array(y)
-
-        # Entrenar el clasificador
-        self.clf.fit(X, y)
-        self.entrenado = True
-        print("Entrenamiento completado. El árbol de decisión simbólico está listo.")
-
-    def predecir(self, caudal, presion, act_id, porcentaje_tanque):
-        """Predice el estado hídrico actual utilizando el modelo de clasificación."""
-        if not self.entrenado:
-            self.entrenar()
-
-        if HAS_SKLEARN:
-            X_test = np.array([[caudal, presion, act_id, porcentaje_tanque]])
-            pred = self.clf.predict(X_test)[0]
-            prob = self.clf.predict_proba(X_test)[0][pred] * 100
-            return pred, self.clases[pred], round(prob, 1)
-        else:
-            # Fallback en Python Puro (Motor de reglas lógicas idénticas al árbol de decisión)
-            # Prioridad 1: Nivel de reserva crítico
-            if porcentaje_tanque < 15.0:
-                return 4, self.clases[4], 99.9
-
-            # Prioridad 2: Consumo Excesivo (Caudal excesivo)
-            if caudal > 17.5:
-                return 3, self.clases[3], 95.0
-
-            # Prioridad 3: Posible fuga (Caudal activo sin actividad declarada)
-            if caudal >= 0.5 and act_id == 0:
-                return 2, self.clases[2], 94.5
-
-            # Prioridad 4: Normal Reposo
-            if caudal < 0.5 and act_id == 0:
-                return 0, self.clases[0], 98.0
-
-            # Prioridad 5: Normal en Uso
-            return 1, self.clases[1], 90.0
-
-    def obtener_reglas_simbolicas(self):
-        """Traduce la estructura del árbol de decisión de Scikit-Learn a reglas lógicas legibles (IF-THEN)."""
-        if not self.entrenado:
-            self.entrenar()
-
-        if HAS_SKLEARN:
-            tree = self.clf.tree_
-            feature_names = ["Caudal (L/min)", "Presión (PSI)", "Actividad Declarada (ID)", "Nivel Tanque (%)"]
-            reglas = []
-
-            def recurse(node, depth, path):
-                if tree.feature[node] != -2:  # Nodo interno
-                    name = feature_names[tree.feature[node]]
-                    threshold = tree.threshold[node]
-
-                    # Rama izquierda
-                    left_path = path + [f"{name} <= {threshold:.2f}"]
-                    recurse(tree.children_left[node], depth + 1, left_path)
-
-                    # Rama derecha
-                    right_path = path + [f"{name} > {threshold:.2f}"]
-                    recurse(tree.children_right[node], depth + 1, right_path)
-                else:  # Nodo hoja
-                    val = tree.value[node][0]
-                    clase_id = np.argmax(val)
-                    clase_nombre = self.clases[clase_id]
-                    reglas.append(f"SI {' Y '.join(path)} -> ENTONCES {clase_nombre}")
-
-            recurse(0, 1, [])
-            return reglas
-        else:
-            return [
-                "SI Nivel Tanque (%) < 15.00 -> ENTONCES Crítico (Reserva de Agua Baja)",
-                "SI Caudal (L/min) > 17.50 Y Nivel Tanque (%) >= 15.00 -> ENTONCES Alerta (Consumo Excesivo Detectado)",
-                "SI Caudal (L/min) >= 0.50 Y Actividad Declarada (ID) == 0 Y Nivel Tanque (%) >= 15.00 -> ENTONCES Alerta (Posible Fuga en la Red)",
-                "SI Caudal (L/min) < 0.50 Y Actividad Declarada (ID) == 0 Y Nivel Tanque (%) >= 15.00 -> ENTONCES Normal (Reposo)",
-                "SI Caudal (L/min) >= 0.50 Y Actividad Declarada (ID) != 0 Y Nivel Tanque (%) >= 15.00 -> ENTONCES Normal (Uso Esperado)"
-            ]
-
-
-def obtener_respuesta_asistente(pregunta, gestor, sensor_reading, ia_modelo):
+    return (
+        "Aqualy no pudo interpretar su pregunta con claridad. "
+        "Por favor pregunte sobre el estado del tanque, fugas, minutos disponibles o consejos de ahorro."
+    )
     """
     Analiza la pregunta del usuario formalmente y emite una respuesta clara y respetuosa.
     Utiliza el motor de IA simbólica y los datos del medidor de agua.

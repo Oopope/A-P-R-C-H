@@ -61,7 +61,8 @@ Explicaremos en los comentarios y en la documentación final cómo cambiar rápi
 
 ### Pruebas Manuales
 
-1. Ejecutar la aplicación usando `.venv\Scripts\python src/main.py`.
+1. Ejecutar la aplicación usando `.venv\Scripts\python src/main.py` desde la carpeta `A-P-R-C-H`.
+   Si estás en la carpeta superior `Proyecto`, usa `python A-P-R-C-H/src/main.py`.
 2. Probar la navegación entre las 4 pestañas de la barra lateral.
 3. Verificar que las actividades del usuario muestren los minutos calculados correctamente y descuenten el agua en tiempo real.
 4. Generar el ejecutable usando `scripts/build.py` y verificar que abra correctamente.
