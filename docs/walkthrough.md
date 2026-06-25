@@ -1,4 +1,4 @@
-# Resumen del Rediseño de Aquli e Implementación de Secciones
+# Resumen del Rediseño de Aqualy e Implementación de Secciones
 
 Se ha completado con éxito la transformación del sistema inteligente hídrico **Aquli**, mejorando la elegancia de la interfaz y facilitando la comprensión del usuario al traducir litros a minutos restantes por cada actividad doméstica.
 
