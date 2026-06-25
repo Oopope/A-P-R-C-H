@@ -18,6 +18,11 @@ Resumen rápido y pasos para ejecutar y compilar el proyecto.
 - Windows 10+ (para el ejecutable entregable)
 - Python 3.10+ (se recomienda usar el entorno virtual provisto)
 
+## Notificaciones estilo Windows
+
+- La aplicación muestra alertas tipo "toast" flotantes cuando el estado del tanque cambia a amarillo o rojo.
+- Estas notificaciones aparecen en la esquina superior derecha de la ventana y se ocultan automáticamente tras unos segundos.
+
 ## Ejecutar en modo desarrollo
 
 1. Activar el entorno virtual:
@@ -46,3 +51,5 @@ El ejecutable resultante estará en `dist/A-P-R-C-H/A-P-R-C-H.exe`.
 
 - La documentación del usuario y los planes están en `docs/`.
 - Si necesitas ajustar las tasas de consumo por actividad, edita `src/logic.py` en el diccionario `ACTIVIDADES`.
+- El ejecutable generado se encuentra en `dist/A-P-R-C-H/A-P-R-C-H.exe` tras ejecutar `scripts/build.py`.
+- La aplicación incluye notificaciones estilo Windows (toast) para alertas de nivel de tanque en esquina superior derecha.

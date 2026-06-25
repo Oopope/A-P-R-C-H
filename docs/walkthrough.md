@@ -52,3 +52,4 @@ Si deseas realizar cambios rápidos tú mismo:
 
 - Se compiló exitosamente el ejecutable `.exe` con todas las dependencias asociadas de PyQt5 y SQLite.
 - El instalador/ejecutable resultante se encuentra disponible en la carpeta: [dist/A-P-R-C-H/](file:///c:/Users/Usuario/Desktop/Proyecto/A-P-R-C-H/dist/A-P-R-C-H).
+- La aplicación incluye ahora notificaciones flotantes tipo toast para alertar sobre el nivel del tanque en tiempo real.

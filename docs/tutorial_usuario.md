@@ -10,6 +10,7 @@ Este documento explica paso a paso cómo usar Aqualy, cada pantalla, acciones di
 - Abrir app en desarrollo (desde `Proyecto`): ejecutar `python A-P-R-C-H/src/main.py`.
 - Ejecutable Windows: `dist/A-P-R-C-H/A-P-R-C-H.exe` (creado con `scripts/build.py` desde `A-P-R-C-H`).
 - Base de datos SQLite: `data/sistema.db` (copia de seguridad recomendada antes de cambios).
+- Notificaciones de estado: la app muestra alertas flotantes tipo Windows cuando el nivel del tanque cambia de estado (verde, amarillo, rojo).
 
 ---
 
@@ -65,6 +66,10 @@ Observación: si la ventana no aparece revise errores en consola (mensajes de im
 ```
 
 2. Al finalizar, verá `dist/A-P-R-C-H/A-P-R-C-H.exe`. Mueva o comprima `dist` para distribuir.
+
+3. Al ejecutar el `.exe`, se iniciará la aplicación completa con notificaciones tipo Windows activas para los cambios de estado del tanque.
+
+4. El ejecutable ya ha sido generado y verificado en la carpeta `dist/A-P-R-C-H/`.
 
 Nota sobre PyInstaller: puede mostrar advertencias de "hidden imports" para paquetes opcionales (p. ej. scikit-learn). Si tu ejecución empacada falla por falta de librería, agrégala a `--hidden-import` en `scripts/build.py` o instala la dependencia en el entorno antes de empacar.
 

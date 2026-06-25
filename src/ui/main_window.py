@@ -18,7 +18,7 @@ from PyQt5.QtWidgets import (
     QGridLayout, QMessageBox, QScrollArea, QDialog,
     QStackedWidget, QLineEdit, QFormLayout, QButtonGroup,
     QTextBrowser, QDoubleSpinBox, QSpinBox, QDialogButtonBox,
-    QSizePolicy
+    QSizePolicy, QGraphicsDropShadowEffect
 )
 from PyQt5.QtCore import Qt, QTimer, QPropertyAnimation, QEasingCurve
 from datetime import datetime
@@ -259,6 +259,43 @@ class GestionRecipientesDialog(QDialog):
 # =============================================================================
 # WIDGET: TARJETA GENÉRICA
 # =============================================================================
+class NotificationToast(QFrame):
+    """Pequeña notificación tipo toast para alertas y actualizaciones."""
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setWindowFlags(
+            Qt.ToolTip | Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint
+        )
+        self.setAttribute(Qt.WA_TranslucentBackground)
+        self.setObjectName("NotificationToast")
+
+        self._layout = QVBoxLayout(self)
+        self._layout.setContentsMargins(14, 12, 14, 12)
+        self._layout.setSpacing(0)
+
+        self.label = QLabel()
+        self.label.setWordWrap(True)
+        self.label.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
+        self.label.setStyleSheet(
+            "color: white; font-size: 13px;"
+        )
+        self._layout.addWidget(self.label)
+
+        shadow = QGraphicsDropShadowEffect(self)
+        shadow.setBlurRadius(20)
+        shadow.setOffset(0, 5)
+        shadow.setColor(Qt.black)
+        self.setGraphicsEffect(shadow)
+
+    def setMessage(self, message: str, bg_color: str, border_color: str):
+        self.label.setText(message)
+        self.setStyleSheet(
+            f"background-color: {bg_color}; "
+            f"border: 1px solid {border_color}; border-radius: 14px;"
+        )
+        self.adjustSize()
+
+
 class CardWidget(QFrame):
     """
     Contenedor visual estilo tarjeta (Card) para agrupar y presentar información
@@ -306,9 +343,16 @@ class AqualiDashboard(QMainWindow):
         self.sensor = sensor        # Medidor físico simulado (caudal, presión, temperatura)
         self.consumo_acumulado = 0.0  # Litros acumulados pendientes de guardar en la BD
         self.sidebar_expandido = True  # Estado inicial: barra lateral visible
+        self._ultimo_estado_notificacion = None
 
         self.setWindowTitle("Aqualy — Monitoreo Hídrico Inteligente")
         self.resize(1200, 820)
+
+        self.toast_notificacion = NotificationToast(self)
+        self.toast_notificacion.hide()
+        self.toast_timer = QTimer(self)
+        self.toast_timer.setSingleShot(True)
+        self.toast_timer.timeout.connect(self.toast_notificacion.hide)
 
         self._init_ui()
         self._actualizar_interfaz()
@@ -430,6 +474,36 @@ class AqualiDashboard(QMainWindow):
 
         self.sidebar_expandido = not self.sidebar_expandido
 
+    def resizeEvent(self, event):
+        """Garantiza que el chat y el contenido se ajusten correctamente al redimensionar."""
+        super().resizeEvent(event)
+        if hasattr(self, 'chat_content'):
+            self.chat_content.adjustSize()
+        if hasattr(self, 'chat_scroll'):
+            QTimer.singleShot(10, self._forzar_scroll_final)
+        QTimer.singleShot(10, self._reposicionar_toast)
+
+    def _forzar_scroll_final(self):
+        if hasattr(self, 'chat_scroll'):
+            scrollbar = self.chat_scroll.verticalScrollBar()
+            scrollbar.setValue(scrollbar.maximum())
+
+    def _reposicionar_toast(self):
+        if hasattr(self, 'toast_notificacion') and self.toast_notificacion.isVisible():
+            self._posicionar_toast()
+
+    def _posicionar_toast(self):
+        if not hasattr(self, 'toast_notificacion'):
+            return
+        margin = 18
+        toast = self.toast_notificacion
+        toast.adjustSize()
+        # Posicionar en esquina superior derecha de la ventana principal
+        global_pos = self.mapToGlobal(self.rect().topLeft())
+        x = global_pos.x() + self.width() - toast.width() - margin - 10
+        y = global_pos.y() + margin + 40
+        toast.move(x, y)
+
     # ─────────────────────────────────────────────────────────────────────────
     # PESTAÑA 0: MI SISTEMA
     # ─────────────────────────────────────────────────────────────────────────
@@ -507,16 +581,31 @@ class AqualiDashboard(QMainWindow):
         # hay poco contenido (comportamiento natural de chat).
         self.chat_scroll = QScrollArea()
         self.chat_scroll.setWidgetResizable(True)
+        self.chat_scroll.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.chat_scroll.setStyleSheet(
             "background-color: #0F172A; border-radius: 12px; border: 1px solid #334155;"
         )
         self.chat_content = QWidget()
         self.chat_content.setStyleSheet("background-color: transparent;")
+        self.chat_content.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.chat_layout = QVBoxLayout(self.chat_content)
         self.chat_layout.setContentsMargins(12, 12, 12, 12)
         self.chat_layout.setSpacing(10)
         self.chat_layout.setAlignment(Qt.AlignTop)  # Los mensajes fluyen desde arriba
         self.chat_scroll.setWidget(self.chat_content)
+
+        self.notification_banner = QLabel()
+        self.notification_banner.setObjectName("NotificationBanner")
+        self.notification_banner.setWordWrap(True)
+        self.notification_banner.setAlignment(Qt.AlignCenter)
+        self.notification_banner.setMinimumHeight(56)
+        self.notification_banner.setStyleSheet(
+            "background-color: #0F172A; color: #E2E8F0; "
+            "border: 1px solid #334155; border-radius: 12px; padding: 10px;"
+        )
+        chat_outer.addWidget(self.notification_banner)
+        self._actualizar_panel_notificaciones()
+
         chat_outer.addWidget(self.chat_scroll, stretch=1)
 
         # Botones de sugerencia rápida
@@ -932,6 +1021,7 @@ class AqualiDashboard(QMainWindow):
             self.lbl_prob.setStyleSheet("font-size: 13px; font-weight: bold; color: #EAB308;")
         else:
             self.lbl_prob.setStyleSheet("font-size: 13px; font-weight: bold; color: #EF4444;")
+        self._actualizar_panel_notificaciones()
         self._actualizar_resumen_admin()
 
     def _rebuild_barras(self):
@@ -969,6 +1059,85 @@ class AqualiDashboard(QMainWindow):
                 self.barras_progreso[cont.nombre] = pbar
 
         self.layout_barras.addStretch()
+
+    def _actualizar_panel_notificaciones(self):
+        """Actualiza la tarjeta de notificaciones de estado del tanque."""
+        if not hasattr(self, 'notification_banner'):
+            return
+
+        capacidad_total = sum(cont.capacidad_maxima for cont in self.gestor.contenedores)
+        litros = self.gestor.litros_totales
+
+        if capacidad_total <= 0:
+            mensaje = (
+                "Aún no hay tanques registrados. "
+                "Agregue un tanque para recibir notificaciones de estado en tiempo real."
+            )
+            color = "#475569"
+            fondo = "#0F172A"
+            borde = "#334155"
+        else:
+            porcentaje = (litros / capacidad_total) * 100
+            if porcentaje >= 60:
+                mensaje = (
+                    f"Hola usuario, el tanque está bien. "
+                    f"Actualmente tiene {porcentaje:.0f}% de agua, estado VERDE."
+                )
+                color = "#D1FAE5"
+                fondo = "#064E3B"
+                borde = "#22C55E"
+            elif porcentaje >= 30:
+                mensaje = (
+                    f"Hola usuario, el tanque está por la mitad. "
+                    f"Tiene {porcentaje:.0f}% de agua, estado AMARILLO."
+                )
+                color = "#FEF3C7"
+                fondo = "#78350F"
+                borde = "#F59E0B"
+            else:
+                mensaje = (
+                    f"¡Alerta! El tanque está casi vacío. "
+                    f"Sólo queda {porcentaje:.0f}% de agua, estado ROJO."
+                )
+                color = "#FEE2E2"
+                fondo = "#7F1D1D"
+                borde = "#EF4444"
+
+        self.notification_banner.setText(mensaje)
+        self.notification_banner.setStyleSheet(
+            f"background-color: {fondo}; color: {color}; "
+            f"border: 1px solid {borde}; border-radius: 12px; padding: 10px;"
+        )
+
+        estado_actual = "verde" if porcentaje >= 60 else "amarillo" if porcentaje >= 30 else "rojo"
+        if estado_actual != self._ultimo_estado_notificacion:
+            self._mostrar_notificacion_toast(mensaje, estado_actual)
+            self._ultimo_estado_notificacion = estado_actual
+
+    def _mostrar_notificacion_toast(self, mensaje: str, estado: str):
+        """Muestra una notificación tipo Windows como un toast flotante."""
+        if not hasattr(self, 'toast_notificacion') or self.toast_notificacion is None:
+            self.toast_notificacion = NotificationToast(self)
+            self.toast_notificacion.hide()
+        if not hasattr(self, 'toast_timer') or self.toast_timer is None:
+            self.toast_timer = QTimer(self)
+            self.toast_timer.setSingleShot(True)
+            self.toast_timer.timeout.connect(self.toast_notificacion.hide)
+
+        if estado == "verde":
+            bg_color = "#065F46"
+            border_color = "#22C55E"
+        elif estado == "amarillo":
+            bg_color = "#78350F"
+            border_color = "#F59E0B"
+        else:
+            bg_color = "#7F1D1D"
+            border_color = "#EF4444"
+
+        self.toast_notificacion.setMessage(mensaje, bg_color, border_color)
+        self._posicionar_toast()
+        self.toast_notificacion.show()
+        self.toast_timer.start(4200)
 
     # ─────────────────────────────────────────────────────────────────────────
     # CHAT DEL ASISTENTE
