@@ -6,9 +6,9 @@ PROPÓSITO: Define la interfaz gráfica del sistema Aqualy.
 Estructura de la Interfaz:
   - WelcomeDialog        : Ventana de bienvenida que aparece UNA SOLA VEZ al iniciar.
   - GestionRecipientesDialog : Diálogo modal para agregar/eliminar recipientes de agua.
-  - AqualiDashboard      : Ventana principal con barra lateral de 2 pestañas:
+  - AqualyDashboard      : Ventana principal con barra lateral de 2 pestañas:
       1. Mi Sistema      : Panel de nivel de recipientes + Asistente Virtual (chat) + Medidor en Línea
-      2. Configuración   : Parámetros de fecha de corte, modo de operación y tasas de actividades
+    2. Configuración   : Parámetros de fecha de corte y modo de operación
 =============================================================================
 """
 
@@ -324,7 +324,7 @@ class CardWidget(QFrame):
 # =============================================================================
 # VENTANA PRINCIPAL: AQUALY DASHBOARD
 # =============================================================================
-class AqualiDashboard(QMainWindow):
+class AqualyDashboard(QMainWindow):
     """
     Ventana principal de la aplicación Aqualy.
 
@@ -334,7 +334,7 @@ class AqualiDashboard(QMainWindow):
           * Panel superior: Nivel en tiempo real de todos los recipientes registrados
           * Panel inferior izquierdo: Asistente Virtual (chat)
           * Panel inferior derecho: Medidor en Línea (lectura de caudal, presión, temperatura)
-      - Pestaña 'Configuración': Ajuste de fecha de corte, modo de operación y tasas de consumo
+    - Pestaña 'Configuración': Ajuste de fecha de corte y modo de operación
     """
 
     def __init__(self, gestor: GestorAgua, sensor: SensorSimulado):
@@ -842,7 +842,7 @@ class AqualiDashboard(QMainWindow):
         Construye la pestaña 'Configuración' con los controles para:
           - Establecer la fecha límite de corte del suministro
           - Cambiar el modo de operación (Normal / Ahorro / Extremo)
-          - Ajustar las tasas de consumo por minuto de cada actividad doméstica
+          - (El ajuste de tasas por actividad fue removido)
         """
         page = QWidget()
         layout = QVBoxLayout(page)
@@ -885,23 +885,7 @@ class AqualiDashboard(QMainWindow):
         card_gen.add_layout(form_gen)
         layout.addWidget(card_gen)
 
-        # ── Tarjeta: Tasas de Consumo por Actividad ──────────────────────────
-        card_tasas = CardWidget("Tasas de Consumo por Actividad (Litros / Minuto)")
-        form_tasas = QFormLayout()
-        form_tasas.setVerticalSpacing(12)
-        form_tasas.setHorizontalSpacing(20)
-
-        self.inputs_tasas = {}
-        for act, litros in self.gestor.ACTIVIDADES.items():
-            # Nombre legible de la actividad
-            nombre = act.replace("_", " ").title()
-            inp = QLineEdit(str(litros))
-            inp.setPlaceholderText("L/min")
-            form_tasas.addRow(QLabel(f"{nombre}:"), inp)
-            self.inputs_tasas[act] = inp
-
-        card_tasas.add_layout(form_tasas)
-        layout.addWidget(card_tasas)
+        # Nota: la tarjeta de tasas por actividad fue eliminada.
 
         # ── Botón Guardar ─────────────────────────────────────────────────────
         btn_guardar = QPushButton("Guardar Configuración")
@@ -1287,17 +1271,7 @@ class AqualiDashboard(QMainWindow):
         self.gestor.fecha_fin_str = fecha
         self.gestor.modo_actual = modo
 
-        # Guardar tasas de actividades
-        for act, inp in self.inputs_tasas.items():
-            try:
-                tasa = int(inp.text().strip())
-                if tasa < 0:
-                    raise ValueError
-                self.gestor.ACTIVIDADES[act] = tasa
-            except ValueError:
-                QMessageBox.critical(self, "Valor inválido",
-                    f"La tasa de '{act.replace('_', ' ').title()}' debe ser un número entero positivo.")
-                return
+        # (Las tasas por actividad se gestionan internamente; no se muestran aquí)
 
         QMessageBox.information(self, "Guardado", "La configuración se ha guardado correctamente.")
         self._actualizar_interfaz()

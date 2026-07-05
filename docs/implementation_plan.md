@@ -32,7 +32,7 @@ Este plan detalla los cambios para rediseñar la interfaz de usuario de la aplic
   - **Sistema**: Visualización del inventario actual, barras de progreso de los contenedores, probabilidad bayesiana de supervivencia y modo de operación.
   - **Administrador**: Botones para Reportar Fuga, Recargar Tanques, y opciones para agregar/editar contenedores.
   - **Usuario**: Sección amigable de minutos restantes. Mostrará tarjetas para cada actividad (Ducha, Lavar Platos, Lavadora, Cocinar) indicando cuántos minutos quedan disponibles en total. También incluirá botones interactivos para registrar su uso de forma directa.
-  - **Configuración**: Entrada para modificar la fecha de corte, y controles para ajustar los consumos estándar por minuto de cada actividad.
+  - **Configuración**: Entrada para modificar la fecha de corte y el modo de operación. (Los controles para ajustar consumos por actividad fueron eliminados de la UI; editar `src/logic.py` para cambiar los valores por defecto.)
 
 ### 2. Lógica y Base de Datos (Backend)
 

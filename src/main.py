@@ -12,7 +12,7 @@ Secuencia de arranque:
   3. Asegurar que existan consumos históricos para el cálculo bayesiano.
   4. Instanciar el SensorSimulado.
   5. Mostrar el WelcomeDialog de bienvenida (solo la primera vez de la sesión).
-  6. Si el usuario acepta, mostrar la ventana principal AqualiDashboard.
+    6. Si el usuario acepta, mostrar la ventana principal AqualyDashboard.
 =============================================================================
 """
 
@@ -26,7 +26,7 @@ sys.path.insert(0, base_dir)
 
 from PyQt5.QtWidgets import QApplication
 from src.logic import GestorAgua
-from src.ui.main_window import AqualiDashboard, WelcomeDialog
+from src.ui.main_window import AqualyDashboard, WelcomeDialog
 from src.ui.styles import DARK_THEME_QSS
 import src.database as db
 from src.sensor_simulado import SensorSimulado
@@ -63,7 +63,7 @@ def main():
         sys.exit(0)
 
     # ── 7. Mostrar la Ventana Principal ───────────────────────────────────────
-    ventana = AqualiDashboard(gestor, sensor)
+    ventana = AqualyDashboard(gestor, sensor)
     ventana.show()
 
     sys.exit(app.exec_())

@@ -50,6 +50,7 @@ El ejecutable resultante estará en `dist/A-P-R-C-H/A-P-R-C-H.exe`.
 ## Notas
 
 - La documentación del usuario y los planes están en `docs/`.
-- Si necesitas ajustar las tasas de consumo por actividad, edita `src/logic.py` en el diccionario `ACTIVIDADES`.
+- La opción para ajustar las tasas de consumo por actividad fue eliminada de la interfaz.
+  Si necesitas cambiar los valores por defecto, edita `src/logic.py` en el diccionario `ACTIVIDADES`.
 - El ejecutable generado se encuentra en `dist/A-P-R-C-H/A-P-R-C-H.exe` tras ejecutar `scripts/build.py`.
 - La aplicación incluye notificaciones estilo Windows (toast) para alertas de nivel de tanque en esquina superior derecha.

@@ -12,7 +12,7 @@ Se ha completado con éxito la transformación del sistema inteligente hídrico 
   1.  **Sistema:** Vista resumida diaria con tarjetas estadísticas (días restantes, litros de reserva, consumo de hoy), indicador bayesiano de supervivencia con colores dinámicos (verde/amarillo/rojo) y nivel gráfico de contenedores.
   2.  **Administrador:** Panel de control para recargar tanques al 100%, reportar fugas, alternar el factor del modo de operación, y agregar o eliminar contenedores.
   3.  **Usuario:** Una vista simplificada de las actividades domésticas ("Ducha", "Lavar Platos", "Lavadora", "Cocinar", etc.) con tarjetas individuales que informan al usuario cuántos **minutos restantes** tiene disponibles para cada actividad según la reserva total de agua en lugar de un confuso porcentaje. Además, incluye botones rápidos para registrar el consumo en minutos.
-  4.  **Configuración:** Permite establecer la fecha límite de corte y ajustar manualmente las tasas de consumo (litros por minuto) de cada actividad.
+  4.  **Configuración:** Permite establecer la fecha límite de corte y el modo de operación. El ajuste manual de tasas por actividad fue removido de la interfaz (editar `src/logic.py` para cambiar valores por defecto).
 
 ### 2. Lógica de Negocio y Base de Datos
 
