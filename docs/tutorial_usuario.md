@@ -77,11 +77,11 @@ Nota sobre PyInstaller: puede mostrar advertencias de "hidden imports" para paqu
 
 ## 3. Estructura de la interfaz y uso paso a paso
 
-La aplicación tiene una barra lateral izquierda con 4 secciones: `Sistema`, `Administrador`, `Usuario`, `Configuración`.
+La aplicación tiene una barra lateral izquierda con 2 secciones: `Mi Sistema`, `Configuración`.
 
 Cada sección y sus controles se describen a continuación con la acción exacta y resultado esperado.
 
-3.1 Pantalla principal — `Sistema`
+3.1 Pantalla principal — `Mi Sistema`
 
 - Qué muestra:
   - Encabezado con saludo y resumen rápido: días estimados restantes, litros totales en todos los contenedores y consumo del día.
@@ -90,10 +90,10 @@ Cada sección y sus controles se describen a continuación con la acción exacta
   - Semáforo: color según riesgo (verde/amarillo/rojo).
 
 - Acciones habituales:
-  - Click en un contenedor abre un detalle con historial (últimos consumos) y botón `Ver historial`.
-  - Si se actualiza el consumo desde otra pantalla, la barra y los litros se actualizan inmediatamente.
+  - Click en Escenario de calibracion abre una lista de ciertas opciones de calibracion.
+  - Barra de chat en el apartado del Asistente Virtual,.
 
-    3.2 Pantalla `Administrador` (acciones críticas)
+    3.2 Pantalla `Configuracion` (acciones críticas)
 
 - Botones principales:
   - `Recargar todo` (o `Restablecer tanques`): restaura todos los contenedores a su capacidad máxima. Usar cuando se recibe suministro.
