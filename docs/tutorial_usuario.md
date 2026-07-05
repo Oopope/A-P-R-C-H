@@ -95,12 +95,8 @@ Cada sección y sus controles se describen a continuación con la acción exacta
 
     3.2 Pantalla `Configuracion` (acciones críticas)
 
-- Botones principales:
-  - `Recargar todo` (o `Restablecer tanques`): restaura todos los contenedores a su capacidad máxima. Usar cuando se recibe suministro.
-  - `Reportar fuga`: se abre un diálogo para ingresar litros perdidos por fuga y una descripción. Al confirmar, el sistema resta el volumen indicado de los contenedores (distribución proporcional) y registra el evento en la tabla `consumos` con tipo `fuga`.
-  - `Modo de operación` (selector): `Normal`, `Ahorro`, `Extremo`. Cambia un coeficiente global que el sistema usa para advertencias y límites diarios.
-  - `Agregar tanque`: formulario con `nombre`, `capacidad_max_litros`, `litros_iniciales` y `tipo` (p. ej. cisterna, pipa). Al guardar, se actualiza la base de datos y aparece en `Sistema`.
-  - `Eliminar tanque`: botón en cada tarjeta de tanque. Pide confirmación.
+- Apartados principales:
+  - `Parametros de Operacion`: Aqui es donde se configura la fecha del suministro y se puede cambiar a los distintos modos de operacion(normal, ahorro, extremo).
 
 ---
 
