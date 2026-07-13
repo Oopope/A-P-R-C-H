@@ -30,6 +30,7 @@ from src.ui.main_window import AqualyDashboard, WelcomeDialog
 from src.ui.styles import DARK_THEME_QSS
 import src.database as db
 from src.sensor_simulado import SensorSimulado
+from src.ia_modelo_sklearn import get_model, save_model
 
 
 def main():
@@ -49,6 +50,17 @@ def main():
 
     # ── 4. Instanciar Sensor ────────────────────────────────────────────────
     sensor = SensorSimulado()
+
+    # ── Inicializar / entrenar modelo IA local y persistir si es la primera vez
+    try:
+        m = get_model()
+        # Intentar persistir modelo para evitar reentrenamiento en siguientes arranques
+        saved = save_model()
+        if saved:
+            print(f"Modelo de IA persistido en: {saved}")
+    except Exception:
+        # No bloquear la UI si falla el entrenamiento/persistencia
+        print("Advertencia: no se pudo inicializar el modelo de IA local.")
 
     # ── 5. Iniciar la Aplicación PyQt5 ───────────────────────────────────────
     app = QApplication(sys.argv)

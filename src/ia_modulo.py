@@ -1,8 +1,15 @@
 from datetime import datetime
+from src.ia_modelo_sklearn import predict_activity, predict_intent
 
 
 def obtener_respuesta_asistente(pregunta, gestor, sensor_reading):
-    """Genera respuestas sencillas para el asistente sin usar un modelo de IA externo."""
+    """Genera respuestas usando un clasificador local basado en scikit-learn.
+
+    El flujo es:
+      - Clasificar la intención del texto (estado, fuga, minutos, consejo, medidor, saludo)
+      - Si la intención es actividad, también intentar mapear a un escenario
+    """
+    pregunta_raw = pregunta
     pregunta = pregunta.lower().strip()
 
     litros_totales = gestor.litros_totales
@@ -17,13 +24,16 @@ def obtener_respuesta_asistente(pregunta, gestor, sensor_reading):
     prob = gestor.probabilidad_supervivencia()
     fecha_limite = gestor.fecha_fin_str
 
-    if any(k in pregunta for k in ["tanque", "litros", "reserva", "agua", "estado", "porcentaje", "como va"]):
+    # 1) Intent detection
+    intent, intent_conf = predict_intent(pregunta)
+
+    if intent == "estado":
         return (
             f"Aqualy dice: Actualmente dispone de {litros_totales:.1f} L "
             f"({porcentaje:.1f}% de la capacidad total). La fecha límite de suministro es {fecha_limite}."
         )
 
-    if any(k in pregunta for k in ["fuga", "perdiendo", "tubería", "goteo", "leak"]):
+    if intent == "fuga":
         if caudal >= 0.5 and actividad_id == 0 and valvula_estado == "ABIERTA":
             return (
                 f"Aqualy detecta un flujo activo de {caudal:.2f} L/min "
@@ -34,7 +44,7 @@ def obtener_respuesta_asistente(pregunta, gestor, sensor_reading):
             f"y la presión es {presion:.1f} PSI."
         )
 
-    if any(k in pregunta for k in ["minutos", "ducha", "baño", "lavar", "cocinar", "ropa", "tiempo", "duracion"]):
+    if intent == "minutos":
         return (
             "Aqualy estima el tiempo disponible por actividad según sus reservas:\n"
             f"- Ducha: {minutos_restantes.get('ducha', 0)} min\n"
@@ -44,7 +54,7 @@ def obtener_respuesta_asistente(pregunta, gestor, sensor_reading):
             f"- Riego: {minutos_restantes.get('riego', 0)} min"
         )
 
-    if any(k in pregunta for k in ["consejo", "recomienda", "ahorrar", "sugerencia", "que hago", "ayuda"]):
+    if intent == "consejo":
         if prob > 85:
             return (
                 f"Aqualy indica que su probabilidad de abastecimiento es alta ({prob}%). "
@@ -60,17 +70,26 @@ def obtener_respuesta_asistente(pregunta, gestor, sensor_reading):
             "Reduzca el consumo inmediato y recargue sus depósitos si es posible."
         )
 
-    if any(k in pregunta for k in ["medidor", "sensor", "funcionamiento", "para que sirve"]):
+    if intent == "medidor":
         return (
             "El medidor simulado registra el caudal y la presión del agua en tiempo real. "
             "Usa esos datos para mostrar el consumo actual y detectar posibles anomalías."
         )
 
-    if any(k in pregunta for k in ["hola", "buenas", "saludo"]):
+    if intent == "saludo":
         hora = datetime.now().hour
         saludo = "Buenos días" if hora < 12 else "Buenas tardes" if hora < 19 else "Buenas noches"
         return f"{saludo}. Soy Aqualy, su asistente de monitoreo hídrico. ¿En qué puedo ayudarle?"
 
+    # Si no reconocemos intención, intentar detectar actividad/escenario
+    act_label, act_conf = predict_activity(pregunta)
+    if act_conf > 50:
+        return (
+            f"Aqualy detectó actividad: {act_label} (confianza {act_conf:.0f}%). "
+            "Si desea registrar el consumo, use el botón 'Agregar actividad' en el medidor."
+        )
+
+    # Default fallback
     return (
         "Aqualy no pudo interpretar su pregunta con claridad. "
         "Por favor pregunte sobre el estado del tanque, fugas, minutos disponibles o consejos de ahorro."

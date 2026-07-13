@@ -1,3 +1,27 @@
+# Byte-compiled / cache
+__pycache__/
+*.py[cod]
+
+# Virtual environments
+venv/
+env/
+.venv/
+
+# Distribución / build
+dist/
+build/
+*.spec
+
+# Datos y modelos persistidos (no subir modelos grandes)
+data/ia_modelo.pkl
+
+# Config y entorno
+.env
+*.local
+
+# IDEs
+.vscode/
+.idea/
 # Entornos virtuales (Virtual Environments)
 .venv/
 venv/

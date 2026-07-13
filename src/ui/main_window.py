@@ -691,20 +691,41 @@ class AqualyDashboard(QMainWindow):
         medidor_layout.addWidget(self.btn_valvula)
 
         # Separador visual hacia la sección de diagnóstico
-        lbl_sep = QLabel("— Herramientas de Diagnóstico —")
+        lbl_sep = QLabel("— Diagnóstico del Medidor —")
         lbl_sep.setAlignment(Qt.AlignCenter)
         lbl_sep.setStyleSheet("color: #475569; font-size: 11px; margin-top: 8px;")
         medidor_layout.addWidget(lbl_sep)
 
-        # Selector de escenarios de calibración (discreto, técnico)
-        lbl_esc = QLabel("Escenario de calibración:")
+        # Entrada libre para la actividad que el usuario está ejecutando
+        lbl_esc = QLabel("Escenario / Actividad:")
         lbl_esc.setStyleSheet("color: #64748B; font-size: 12px;")
         medidor_layout.addWidget(lbl_esc)
 
-        self.combo_escenario = QComboBox()
-        self.combo_escenario.addItems(list(self.sensor.ESCENARIOS.keys()))
-        self.combo_escenario.currentTextChanged.connect(self._cambiar_escenario)
-        medidor_layout.addWidget(self.combo_escenario)
+        actividad_row = QHBoxLayout()
+        actividad_row.setSpacing(8)
+
+        self.input_actividad = QLineEdit()
+        self.input_actividad.setPlaceholderText("Ej: ducha, baño, tina")
+        self.input_actividad.setStyleSheet(
+            "background-color: #0F172A; color: white; border: 1px solid #334155;"
+            " border-radius: 10px; padding: 10px;"
+        )
+        actividad_row.addWidget(self.input_actividad, stretch=3)
+
+        self.btn_actividad = QPushButton("Agregar actividad")
+        self.btn_actividad.setProperty("class", "PrimaryButton")
+        self.btn_actividad.clicked.connect(self._registrar_actividad_usuario)
+        actividad_row.addWidget(self.btn_actividad, stretch=1)
+
+        medidor_layout.addLayout(actividad_row)
+
+        self.lbl_actividad_hint = QLabel(
+            "Escriba la actividad en lenguaje cotidiano: ducha, baño, tina, lavar cacharros, regar matas, lavar ropa, trapear o lavar carro."
+            " El sistema reconocerá el escenario automáticamente sin pedir litros."
+        )
+        self.lbl_actividad_hint.setWordWrap(True)
+        self.lbl_actividad_hint.setStyleSheet("color: #94A3B8; font-size: 10px;")
+        medidor_layout.addWidget(self.lbl_actividad_hint)
 
         self.lbl_esc_desc = QLabel(self.sensor.ESCENARIOS["Reposo"]["descripcion"])
         self.lbl_esc_desc.setWordWrap(True)
@@ -754,6 +775,23 @@ class AqualyDashboard(QMainWindow):
                 f"Esto equivale a {gasto:.1f} L descontados de sus reservas."
             )
             self._actualizar_interfaz()
+
+    def _registrar_actividad_usuario(self):
+        texto = self.input_actividad.text().strip()
+        if not texto:
+            QMessageBox.warning(self, "Actividad requerida", "Por favor ingrese una actividad o escenario.")
+            return
+
+        escenario = self.sensor.set_actividad(texto)
+        self.lbl_esc_desc.setText(self.sensor.ESCENARIOS[escenario]["descripcion"])
+        self.input_actividad.clear()
+        self._actualizar_interfaz()
+
+        QMessageBox.information(
+            self, "Actividad registrada",
+            f"El sistema ha identificado la actividad como '{escenario}'.\n"
+            "La simulación de flujo se ajustará automáticamente al escenario detectado."
+        )
 
     def _registrar_actividad_personalizado(self, actividad):
         dialog = QDialog(self)
