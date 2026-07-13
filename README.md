@@ -3,10 +3,12 @@
 Proyecto Aqualy — Monitor hídrico con asistente local y simulador de sensor.
 
 Resumen rápido
+
 - Aplicación PyQt5 que simula lecturas de caudal, presión y temperatura.
 - Incluye un clasificador local (scikit-learn) para detectar intenciones y mapear actividades.
 
 Archivos importantes
+
 - `src/` — código fuente.
 - `dist/` — ejecutable generado (no se sube al repo por defecto).
 - `data/ia_modelo.pkl` — modelo entrenado (excluido por `.gitignore`).
@@ -14,25 +16,33 @@ Archivos importantes
 
 Comandos útiles
 Instalar dependencias:
+
 ```bash
 python -m pip install -r requirements.txt
 ```
+
 Ejecutar la app en desarrollo:
+
 ```bash
 python src/main.py
 ```
+
 Generar ejecutable (PyInstaller, se incluye `A-P-R-C-H.spec`):
+
 ```bash
 pyinstaller A-P-R-C-H/A-P-R-C-H.spec --clean --noconfirm
 ```
 
 Re-entrenar y persistir modelo IA (opcional):
+
 ```bash
 python -c "from src.ia_modelo_sklearn import get_model, save_model; m = get_model(); save_model()"
 ```
 
 Subida a GitHub (sugerencia)
+
 1. Inicializar repo:
+
 ```bash
 git init
 git add .
@@ -41,11 +51,14 @@ git branch -M main
 git remote add origin <URL_REMOTE>
 git push -u origin main
 ```
-2. Crear Release para adjuntar `dist/A-P-R-C-H.zip` (no publicar artefactos binarios en el repo principal).
+
+1. Crear Release para adjuntar `dist/A-P-R-C-H.zip` (no publicar artefactos binarios en el repo principal).
 
 Contacto
+
 - Si quieres, te ayudo a crear la Release o a automatizar re-entrenamientos desde la UI.
-# A-P-R-C-H — Aqualy (Proyecto de Gestión Hídrica)
+
+## A-P-R-C-H — Aqualy (Proyecto de Gestión Hídrica)
 
 > Nota: este proyecto debe ejecutarse desde la carpeta `A-P-R-C-H`.
 > Si estás en la carpeta superior `Proyecto`, ejecuta `python A-P-R-C-H/src/main.py`.
@@ -78,7 +91,7 @@ Resumen rápido y pasos para ejecutar y compilar el proyecto.
 .venv\Scripts\Activate.ps1
 ```
 
-2. Ejecutar la app:
+1. Ejecutar la app:
 
 ```powershell
 python src/main.py
