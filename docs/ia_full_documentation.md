@@ -1,60 +1,105 @@
 # Documentación completa: IA local con scikit-learn
 
-Este documento centraliza la información sobre el diseño, uso y mantenimiento del módulo de IA local para Aqualy.
+Este documento centraliza la información sobre el diseño, uso, mantenimiento y build del módulo de IA local para Aqualy.
 
 ## Resumen
 
-El sistema incluye un clasificador local (scikit-learn) que realiza dos tareas:
+El sistema incluye un clasificador local (scikit-learn) que realiza dos tareas principales:
 
-- Detección de la intención general del usuario (estado, fuga, minutos, consejo, medidor, saludo).
+- Detección de la intención del usuario (`estado`, `fuga`, `minutos`, `consejo`, `medidor`, `saludo`).
 - Mapeo de texto libre de actividad a un escenario simulado (ej: "ducha" → "Ducha Activa").
 
 ## Archivos relevantes
 
-- `src/ia_modelo_sklearn.py`: implementación del pipeline sklearn, funciones `predict_activity`, `predict_intent`, `get_model` y `save_model`. [src/ia_modelo_sklearn.py](src/ia_modelo_sklearn.py)
+- `src/ia_modelo_sklearn.py`: implementación del pipeline sklearn, funciones `predict_activity`, `predict_intent`, `get_model` y `save_model`.
+- `src/ia_modulo.py`: capa intermediaria usada por la UI; ahora llama a `predict_intent` y `predict_activity`.
+- `src/sensor_simulado.py`: define `ESCENARIOS`, `ACTIVIDAD_POR_ESCOPEGIO` y el mapeo de actividades.
+- `src/ui/main_window.py`: entrada de texto libre del usuario para la actividad y la visualización del medidor.
+- `src/main.py`: arranque de la aplicación y persistencia inicial del modelo.
+- `A-P-R-C-H.spec`: configuración de PyInstaller para generar el ejecutable.
 
-- `src/ia_modulo.py`: capa usada por la interfaz; ahora consulta `predict_intent` y `predict_activity`. [src/ia_modulo.py](src/ia_modulo.py)
-- `src/sensor_simulado.py`: define `ESCENARIOS` y `ACTIVIDAD_POR_ESCOPEGIO`. [src/sensor_simulado.py](src/sensor_simulado.py)
-- `src/ui/main_window.py`: entrada de texto libre y control del medidor. [src/ui/main_window.py](src/ui/main_window.py)
-- `src/main.py`: arranque y persistencia inicial del modelo. [src/main.py](src/main.py)
+## Estructura actual de `src/ia_modelo_sklearn.py`
 
-## Conceptos clave
+- `MODEL_PATH`: resuelve la ruta al archivo `data/ia_modelo.pkl`.
+- `IAEnsemble`: mantiene dos pipelines de scikit-learn (TF-IDF + MultinomialNB).
+- `get_model()`: intenta cargar el modelo persistido y, si no existe, entrena uno en memoria.
+- `save_model()`: guarda el modelo entrenado en `data/ia_modelo.pkl`.
 
-- Dataset: pares `(texto, etiqueta)` usados para entrenar los clasificadores.
-- Re-entrenar: volver a ajustar los parámetros del modelo con más datos.
-- Persistencia: guardar el objeto del modelo entrenado en `data/ia_modelo.pkl` para evitar reentrenamientos en cada inicio.
+### Comportamiento esperado
 
-## Pasos para probar localmente
+- Si `data/ia_modelo.pkl` existe, se carga directamente.
+- Si no existe o hay error, se entrena un modelo en memoria.
+- Las funciones `predict_activity` y `predict_intent` devuelven la etiqueta y su probabilidad.
 
-1. Instale dependencias: `python -m pip install -r requirements.txt`.
-2. Ejecutar prueba básica:
+## Importante: editor y entorno
 
-```bash
-python -c "from src.ia_modelo_sklearn import predict_activity, predict_intent; print(predict_activity('ducha')); print(predict_intent('¿Cómo va el tanque?'))"
+Los subrayados amarillos en `src/ia_modelo_sklearn.py` son advertencias de Pylance que indican que el editor no está usando el mismo intérprete que tu terminal.
+
+- En terminal funciona con tu entorno virtual (`.venv`).
+- En VS Code necesitas seleccionar el intérprete `A-P-R-C-H\.venv\Scripts\python.exe`.
+
+Si no seleccionas ese intérprete, Pylance puede marcar `joblib` y `sklearn` como importaciones faltantes, aunque el código funcione.
+
+## Pruebas locales
+
+Probar el módulo desde la terminal del proyecto:
+
+```powershell
+python -c "import sys, os; sys.path.insert(0, os.getcwd()); from src.ia_modelo_sklearn import predict_activity, predict_intent; print(predict_activity('ducha')); print(predict_intent('¿Hay una fuga?'))"
 ```
 
-1. Re-entrenar y guardar modelo:
+Probar solo importación y ruta del modelo:
 
-```bash
-python -c "from src.ia_modelo_sklearn import get_model, save_model; m = get_model(); save_model()"
+```powershell
+python -c "import sys, os; sys.path.insert(0, os.getcwd()); import src.ia_modelo_sklearn as m; print(m.MODEL_PATH); print(os.path.exists(m.MODEL_PATH))"
 ```
 
-## Mejora del dataset
+## Compilación del ejecutable
 
-- Añadir frases locales en `data/ia_dataset_custom.csv` o editar `ACTIVIDAD_POR_ESCOPEGIO`.
+El EXE se genera con PyInstaller usando `A-P-R-C-H.spec`.
 
-- Re-entrenar con el nuevo dataset y validar rendimiento.
+Comando recomendado:
 
-## Seguridad y privacidad
+```powershell
+python -m PyInstaller A-P-R-C-H.spec --clean --noconfirm
+```
 
-- Si agrega frases de usuarios reales, anonimice identificadores (nombres, direcciones).
+El resultado funcional debe quedar en:
 
-## Siguientes pasos recomendados
+- `A-P-R-C-H\dist\A-P-R-C-H\A-P-R-C-H.exe`
 
-- Añadir una herramienta UI para re-entrenar y versionar modelos.
-- Construir un pequeño script de evaluación (accuracy/recall por etiqueta).
-- Recolectar datos reales (Falcón) para robustecer el clasificador.
+Y el directorio temporal de build en:
 
----
+- `A-P-R-C-H\build\A-P-R-C-H`
 
-Para ver guías prácticas de extensión, consulte: [docs/ia_howto_extend.md](docs/ia_howto_extend.md)
+Solo debe existir un conjunto de `build`/`dist` funcionales. Si hay duplicados como `build_new` o `dist_new`, bórralos.
+
+## Resolución de problemas comunes del EXE
+
+- Asegúrate de cerrar cualquier instancia previa del ejecutable antes de reconstruir.
+- Si PyInstaller no puede generar el EXE, elimina manualmente `build` y `dist` y vuelve a ejecutar el comando.
+- Si el EXE lanza errores de importación, añade los módulos necesarios a `hiddenimports` en `A-P-R-C-H.spec`.
+
+## Persistencia de datos y modelo
+
+- `data/ia_modelo.pkl`: modelo entrenado persistente.
+- `data/sistema.db` y `data/sistema.sql`: datos de aplicación.
+
+No subas `data/ia_modelo.pkl` ni los artefactos generados en `build/` y `dist/` al repositorio.
+
+## Re-entrenamiento
+
+Para re-entrenar y guardar el modelo:
+
+```powershell
+python -c "from src.ia_modelo_sklearn import get_model, save_model; get_model(); save_model()"
+```
+
+Si quieres cambiar el dataset, actualiza `src/sensor_simulado.py` o añade frases locales a `ACTIVIDAD_POR_ESCOPEGIO` y vuelve a re-entrenar.
+
+## Enlaces a documentación adicional
+
+- [docs/ia_retraining.md](ia_retraining.md)
+- [docs/ia_dataset.md](ia_dataset.md)
+- [docs/ia_howto_extend.md](ia_howto_extend.md)
+- [docs/tutorial_usuario.md](tutorial_usuario.md)
